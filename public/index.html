@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chromebook Asset Return Tracking</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #5dade2;
+            --secondary-color: #2c3540;
+            --accent-color: #85c1e9;
+            --text-color: #e8eaed;
+            --text-light: #a8b3cf;
+            --border-color: #495563;
+            --success-color: #52c788;
+            --error-color: #ff6b6b;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1e2328;
+            min-height: 100vh;
+            color: var(--text-color);
+            padding: 20px;
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: var(--text-light);
+            font-size: 1.1rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        @media (max-width: 1024px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: #252a30;
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            padding: 30px;
+            border: 1px solid var(--border-color);
+        }
+
+        .card h2 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: var(--accent-color);
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            font-weight: 600;
+            color: var(--text-light);
+        }
+
+        .input-group input {
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: #1e2328;
+            color: var(--text-color);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(93, 173, 226, 0.1);
+        }
+
+        .button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .button-upload {
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+            color: #fff;
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            border: none;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .button-upload:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(108, 92, 231, 0.4);
+        }
+
+        .button-upload:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .button-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .button-secondary {
+            background: var(--secondary-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .button-secondary:hover {
+            background: #353a41;
+        }
+
+        .student-info {
+            background: #1e2328;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .student-info.found {
+            border-color: var(--success-color);
+            background: rgba(82, 199, 136, 0.1);
+        }
+
+        .student-info.not-found {
+            border-color: var(--error-color);
+            background: rgba(255, 107, 107, 0.1);
+        }
+
+        .student-info h3 {
+            color: var(--accent-color);
+            margin-bottom: 10px;
+        }
+
+        .student-info p {
+            color: var(--text-light);
+            margin: 5px 0;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .modal-content {
+            background: #252a30;
+            padding: 30px;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            max-width: 500px;
+            width: 90%;
+            box-shadow: var(--shadow-lg);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            color: var(--accent-color);
+            margin-bottom: 5px;
+        }
+
+        .modal-header p {
+            color: var(--text-light);
+        }
+
+        .modal-body {
+            margin-bottom: 20px;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal-footer button {
+            flex: 1;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .stats {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, rgba(93, 173, 226, 0.2), rgba(133, 193, 233, 0.2));
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .stat-card .number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .scans-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .scan-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            background: #1e2328;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .scan-item:last-child {
+            border-bottom: none;
+        }
+
+        .scan-item-info h4 {
+            color: var(--text-color);
+            margin-bottom: 5px;
+        }
+
+        .scan-item-info p {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        .asset-tag {
+            background: var(--primary-color);
+            color: #000;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .scan-item-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .button-cancel-return {
+            background: rgba(255, 107, 107, 0.2);
+            color: var(--error-color);
+            border: 1px solid var(--error-color);
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .button-cancel-return:hover {
+            background: rgba(255, 107, 107, 0.3);
+        }
+
+        .top-bar {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .connection-status {
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .connection-status.connected {
+            background: rgba(82, 199, 136, 0.2);
+            color: var(--success-color);
+            border: 1px solid var(--success-color);
+        }
+
+        .connection-status.disconnected {
+            background: rgba(255, 107, 107, 0.2);
+            color: var(--error-color);
+            border: 1px solid var(--error-color);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .connected .status-dot {
+            background: var(--success-color);
+        }
+
+        .disconnected .status-dot {
+            background: var(--error-color);
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .error-message {
+            background: rgba(255, 107, 107, 0.2);
+            border: 1px solid var(--error-color);
+            color: var(--error-color);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .success-message {
+            background: rgba(82, 199, 136, 0.2);
+            border: 1px solid var(--success-color);
+            color: var(--success-color);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .timestamp {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .grade-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        @media (max-width: 1024px) {
+            .grade-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .grade-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .grade-card {
+            background: rgba(93, 173, 226, 0.1);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .grade-card-title {
+            color: var(--primary-color);
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .grade-card-stats {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .grade-card-stat {
+            flex: 1;
+            text-align: center;
+        }
+
+        .grade-card-stat-label {
+            color: var(--text-light);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            margin-bottom: 3px;
+        }
+
+        .grade-card-stat-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--accent-color);
+        }
+
+        .grade-card-stat.returned .grade-card-stat-value {
+            color: var(--success-color);
+        }
+
+        .grade-card-stat.not-returned .grade-card-stat-value {
+            color: var(--error-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="handleCsvUpload(event)">
+        <button class="button-upload" id="uploadCsvBtn" onclick="document.getElementById('csvFileInput').click()">⬆ Upload New CSV</button>
+        <div class="connection-status disconnected" id="connectionStatus">
+            <span class="status-dot"></span>
+            <span id="statusText">Connecting...</span>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="header">
+            <h1>📚 Chromebook Asset Return</h1>
+            <p>Real-time tracking system</p>
+        </div>
+
+        <div class="grid">
+            <!-- Student Lookup Section -->
+            <div class="card">
+                <h2>Enter Student ID</h2>
+                <div id="errorMessage" class="error-message hidden"></div>
+                <div id="successMessage" class="success-message hidden"></div>
+
+                <div class="input-group">
+                    <label for="studentIdInput">Student ID:</label>
+                    <input type="text" id="studentIdInput" placeholder="Enter student ID..." autofocus>
+                </div>
+
+                <div id="studentInfoContainer"></div>
+
+                <button class="button button-primary" onclick="searchStudent()">Search Student</button>
+                <button class="button button-secondary" style="margin-top: 10px;" onclick="clearForm()">Clear</button>
+            </div>
+
+            <!-- Stats Section -->
+            <div class="card">
+                <h2>Dashboard</h2>
+                <div class="stats">
+                    <div class="stat-card">
+                        <h3>Total Returned</h3>
+                        <div class="number" id="statsReturned">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Total Students</h3>
+                        <div class="number" id="statsTotalStudents">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Remaining</h3>
+                        <div class="number" id="statsRemaining">0</div>
+                    </div>
+                </div>
+                <h3 style="color: var(--text-light); margin-top: 30px; margin-bottom: 15px; font-size: 1rem;">By Grade</h3>
+                <div class="grade-stats" id="gradeStatsContainer">
+                    <p style="color: var(--text-light); text-align: center;">Loading grade data...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Scans Section -->
+        <div class="card">
+            <h2>Recent Returns (Live Updates)</h2>
+            <div class="scans-list" id="scansList">
+                <p style="color: var(--text-light); text-align: center;">No returns yet...</p>
+            </div>
+        </div>
+
+
+    </div>
+
+    <!-- Asset Tag Modal -->
+    <div class="modal" id="assetModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalStudentName">Student Name</h2>
+                <p id="modalStudentInfo">ID: XXXXX</p>
+            </div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <label for="assetTagInput">Asset Tag / Serial Number:</label>
+                    <input type="text" id="assetTagInput" placeholder="Enter asset tag (e.g., CB-001)" autofocus>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="button button-primary" onclick="submitAssetTag()">Submit</button>
+                <button class="button button-secondary" onclick="closeModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let socket = io();
+        let currentStudent = null;
+
+        // Socket.io event listeners
+        socket.on('connect', () => {
+            console.log('Connected to server');
+            updateConnectionStatus(true);
+        });
+
+        socket.on('disconnect', () => {
+            console.log('Disconnected from server');
+            updateConnectionStatus(false);
+        });
+
+        socket.on('update_scans', (scans) => {
+            updateScansDisplay(scans);
+        });
+
+        socket.on('update_stats', (stats) => {
+            updateStats(stats);
+        });
+
+        socket.on('update_grade_stats', (gradeStats) => {
+            updateGradeTable(gradeStats);
+        });
+
+        // UI Functions
+        function updateConnectionStatus(connected) {
+            const status = document.getElementById('connectionStatus');
+            const text = document.getElementById('statusText');
+            if (connected) {
+                status.classList.remove('disconnected');
+                status.classList.add('connected');
+                text.textContent = 'Connected';
+            } else {
+                status.classList.remove('connected');
+                status.classList.add('disconnected');
+                text.textContent = 'Disconnected';
+            }
+        }
+
+        function searchStudent() {
+            const studentId = document.getElementById('studentIdInput').value.trim();
+            if (!studentId) {
+                showError('Please enter a student ID');
+                return;
+            }
+
+            clearMessages();
+            fetch(`/api/student/${studentId}`)
+                .then(response => {
+                    if (response.ok) return response.json();
+                    throw new Error('Student not found');
+                })
+                .then(student => {
+                    currentStudent = student;
+                    displayStudentInfo(student);
+                    showModal(student);
+                })
+                .catch(error => {
+                    showError('Student not found. Please check the ID.');
+                    document.getElementById('studentInfoContainer').innerHTML = 
+                        '<div class="student-info not-found"><h3>Not Found</h3><p>No student with ID ' + 
+                        studentId + '</p></div>';
+                });
+        }
+
+        function displayStudentInfo(student) {
+            const container = document.getElementById('studentInfoContainer');
+            container.innerHTML = `
+                <div class="student-info found">
+                    <h3>${student.first_name} ${student.last_name}</h3>
+                    <p><strong>ID:</strong> ${student.id}</p>
+                    <p><strong>Graduation Year:</strong> ${student.graduation_year}</p>
+                </div>
+            `;
+        }
+
+        function showModal(student) {
+            document.getElementById('modalStudentName').textContent = 
+                `${student.first_name} ${student.last_name}`;
+            document.getElementById('modalStudentInfo').textContent = `ID: ${student.id}`;
+            document.getElementById('assetTagInput').value = '';
+            document.getElementById('assetModal').classList.add('show');
+            document.getElementById('assetTagInput').focus();
+        }
+
+        function closeModal() {
+            document.getElementById('assetModal').classList.remove('show');
+            currentStudent = null;
+        }
+
+        function submitAssetTag() {
+            const assetTag = document.getElementById('assetTagInput').value.trim();
+            if (!assetTag) {
+                showError('Please enter an asset tag');
+                return;
+            }
+
+            if (!currentStudent) {
+                showError('No student selected');
+                return;
+            }
+
+            fetch('/api/asset-return', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    student_id: currentStudent.id,
+                    asset_tag: assetTag
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showSuccess(`Asset ${assetTag} recorded for ${currentStudent.first_name} ${currentStudent.last_name}`);
+                    closeModal();
+                    clearForm();
+                } else {
+                    showError(data.error || 'Error recording asset return');
+                }
+            })
+            .catch(error => {
+                showError('Error submitting asset: ' + error.message);
+            });
+        }
+
+        function updateScansDisplay(scans) {
+            const list = document.getElementById('scansList');
+            if (scans.length === 0) {
+                list.innerHTML = '<p style="color: var(--text-light); text-align: center;">No returns yet...</p>';
+                return;
+            }
+
+            list.innerHTML = scans.map(scan => `
+                <div class="scan-item">
+                    <div class="scan-item-info">
+                        <h4>${scan.first_name} ${scan.last_name}</h4>
+                        <p><strong>ID:</strong> ${scan.student_id} | <strong>Year:</strong> ${scan.graduation_year}</p>
+                        <p class="timestamp">Returned: ${new Date(scan.returned_at).toLocaleString()}</p>
+                    </div>
+                    <div class="scan-item-actions">
+                        <div class="asset-tag">${scan.asset_tag}</div>
+                        <button
+                            class="button-cancel-return"
+                            onclick="cancelReturn(${scan.return_id}, '${(scan.first_name + ' ' + scan.last_name).replace(/'/g, "\\'")}', '${String(scan.asset_tag).replace(/'/g, "\\'")}')"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function cancelReturn(returnId, studentName, assetTag) {
+            const confirmed = window.confirm(`Are you sure you want to cancel this return?\n\nStudent: ${studentName}\nAsset: ${assetTag}`);
+            if (!confirmed) return;
+
+            fetch(`/api/asset-return/${returnId}`, { method: 'DELETE' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showSuccess(`Canceled return for ${studentName} (${assetTag})`);
+                    } else {
+                        showError(data.error || 'Failed to cancel return');
+                    }
+                })
+                .catch(error => {
+                    showError('Error canceling return: ' + error.message);
+                });
+        }
+
+        function updateStats(stats) {
+            document.getElementById('statsReturned').textContent = stats.total_returns;
+            document.getElementById('statsTotalStudents').textContent = stats.total_students;
+            document.getElementById('statsRemaining').textContent = stats.remaining;
+        }
+
+        function updateGradeTable(gradeStats) {
+            const container = document.getElementById('gradeStatsContainer');
+            if (!gradeStats || gradeStats.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-light); text-align: center;">No grade data available</p>';
+                return;
+            }
+
+            container.innerHTML = gradeStats.map(grade => `
+                <div class="grade-card">
+                    <div class="grade-card-title">${grade.grade}</div>
+                    <div class="grade-card-stats">
+                        <div class="grade-card-stat">
+                            <div class="grade-card-stat-label">Total</div>
+                            <div class="grade-card-stat-value">${grade.total}</div>
+                        </div>
+                        <div class="grade-card-stat returned">
+                            <div class="grade-card-stat-label">Returned</div>
+                            <div class="grade-card-stat-value">${grade.returned}</div>
+                        </div>
+                        <div class="grade-card-stat not-returned">
+                            <div class="grade-card-stat-label">Not Returned</div>
+                            <div class="grade-card-stat-value">${grade.not_returned}</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.classList.remove('hidden');
+        }
+
+        function clearMessages() {
+            document.getElementById('errorMessage').classList.add('hidden');
+            document.getElementById('successMessage').classList.add('hidden');
+        }
+
+        function clearForm() {
+            document.getElementById('studentIdInput').value = '';
+            document.getElementById('studentInfoContainer').innerHTML = '';
+            clearMessages();
+            document.getElementById('studentIdInput').focus();
+        }
+
+        function handleCsvUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const btn = document.getElementById('uploadCsvBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Uploading...';
+
+            const formData = new FormData();
+            formData.append('csvfile', file);
+
+            fetch('/api/upload-csv', { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showUploadToast(`✓ ${data.message}`, true);
+                } else {
+                    showUploadToast('Upload failed: ' + (data.error || 'Unknown error'), false);
+                }
+            })
+            .catch(err => {
+                showUploadToast('Upload error: ' + err.message, false);
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.textContent = '⬆ Upload New CSV';
+                event.target.value = '';
+            });
+        }
+
+        function showUploadToast(message, success) {
+            let toast = document.getElementById('uploadToast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'uploadToast';
+                toast.style.cssText = `
+                    position: fixed; top: 70px; right: 20px; z-index: 200;
+                    padding: 12px 18px; border-radius: 10px; font-size: 0.9rem;
+                    font-weight: 600; max-width: 360px; box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+                    transition: opacity 0.4s ease;
+                `;
+                document.body.appendChild(toast);
+            }
+            toast.textContent = message;
+            toast.style.opacity = '1';
+            if (success) {
+                toast.style.background = 'rgba(82,199,136,0.2)';
+                toast.style.color = '#52c788';
+                toast.style.border = '1px solid #52c788';
+            } else {
+                toast.style.background = 'rgba(255,107,107,0.2)';
+                toast.style.color = '#ff6b6b';
+                toast.style.border = '1px solid #ff6b6b';
+            }
+            clearTimeout(toast._timeout);
+            toast._timeout = setTimeout(() => { toast.style.opacity = '0'; }, 5000);
+        }
+
+        // Enter key support
+        document.getElementById('studentIdInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') searchStudent();
+        });
+
+        document.getElementById('assetTagInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') submitAssetTag();
+        });
+    </script>
+</body>
+</html>
