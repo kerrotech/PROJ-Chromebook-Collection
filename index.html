@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Student Testing Ticket Slip</title>
+    <style>
+        :root {
+            --primary-color: #5dade2;
+            --secondary-color: #2c3540;
+            --accent-color: #85c1e9;
+            --text-color: #e8eaed;
+            --text-light: #a8b3cf;
+            --border-color: #495563;
+            --success-color: #52c788;
+            --error-color: #ff6b6b;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1e2328;
+            min-height: 100vh;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 20px;
+            color: var(--text-color);
+        }
+
+        .container {
+            background: #252a30;
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            padding: 40px;
+            width: 100%;
+            max-width: 600px;
+            animation: fadeInUp 0.6s ease-out;
+            border: 1px solid var(--border-color);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: left;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: var(--text-light);
+            font-size: 1.1rem;
+        }
+
+        .search-section {
+            margin-bottom: 30px;
+        }
+
+        .search-form {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            flex: 1;
+            position: relative;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            outline: none;
+            background: #1e2328;
+            color: var(--text-color);
+        }
+
+        .input-group input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(93, 173, 226, 0.1);
+        }
+
+        .search-btn {
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow);
+        }
+
+        .search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .search-btn:active {
+            transform: translateY(0);
+        }
+
+        .search-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: left;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 0 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .student-info {
+            display: none;
+            background: var(--secondary-color);
+            border-radius: 12px;
+            padding: 30px;
+            margin-top: 30px;
+            border-left: 4px solid var(--success-color);
+            animation: slideIn 0.5s ease-out;
+            border: 1px solid var(--border-color);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .student-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .student-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-color);
+        }
+
+        .student-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .detail-item {
+            background: #1e2328;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+        }
+
+        .detail-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .pdf-btn {
+            background: linear-gradient(135deg, var(--success-color), #059669);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .pdf-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow);
+        }
+
+        .error-message {
+            background: #3a2a2a;
+            color: var(--error-color);
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 4px solid var(--error-color);
+            margin-top: 20px;
+            display: none;
+            border: 1px solid #5a3a3a;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 30px 20px;
+                margin: 10px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .search-form {
+                flex-direction: column;
+            }
+
+            .student-details {
+                grid-template-columns: 1fr;
+            }
+
+            .student-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Testing Ticket Slip</h1>
+            <p>Print testing slip for chromebook exchange</p>
+        </div>
+
+        <div class="search-section">
+            <div class="search-form">
+                <div class="input-group">
+                    <input type="text" id="studentId" placeholder="Enter 5-digit Student ID..." maxlength="5" autocomplete="off">
+                </div>
+                <button class="search-btn" onclick="search()">
+                    <span id="search-text">🔍 Search Student</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Searching for student...</p>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+
+        <div class="student-info" id="studentInfo">
+            <div class="student-header">
+                <div class="button-group">
+                    <button class="pdf-btn" onclick="printPDF()">📄 Print Ticket</button>
+                </div>
+            </div>
+
+            <div class="student-details">
+                <div class="detail-item">
+                    <div class="detail-label">Student ID</div>
+                    <div class="detail-value" id="displayId"></div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Last Name</div>
+                    <div class="detail-value" id="displayLastName"></div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">First Name</div>
+                    <div class="detail-value" id="displayFirstName"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        let studentData = null;
+        let csvData = [];
+        let headerIndex = {};
+
+        // Load CSV data from external file or embedded data
+        async function loadCSV() {
+            try {
+                // Try to fetch the CSV file without using browser cache
+                const response = await fetch('data.csv', {
+                    cache: 'no-store',
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
+                });
+                if (response.ok) {
+                    const csvText = await response.text();
+                    csvData = parseCSV(csvText);
+                    initializeHeaderIndex();
+                } else {
+                    throw new Error('File not found');
+                }
+            } catch (error) {
+                console.log('Loading from GitHub CSV...');
+                // Fall back to GitHub raw content
+                try {
+                    const response = await fetch('https://raw.githubusercontent.com/kerrotech/scheduleprinting/main/data.csv', {
+                        cache: 'no-store',
+                        headers: {
+                            'Cache-Control': 'no-cache'
+                        }
+                    });
+                    const csvText = await response.text();
+                    csvData = parseCSV(csvText);
+                    initializeHeaderIndex();
+                } catch (githubError) {
+                    console.error('Error loading CSV:', githubError);
+                    showError('Could not load student data. Please ensure data.csv is accessible.');
+                }
+            }
+            console.log('CSV loaded successfully:', csvData.length - 1, 'students');
+            prefillFromQuery();
+        }
+
+        // Parse CSV text into array
+        function parseCSV(text) {
+            const lines = text.split('\n');
+            return lines.map(line => {
+                const values = [];
+                let current = '';
+                let inQuotes = false;
+                
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        values.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                values.push(current.trim());
+                return values;
+            });
+        }
+
+        function initializeHeaderIndex() {
+            if (!csvData.length || !csvData[0]) {
+                headerIndex = {};
+                return;
+            }
+
+            const normalize = (value) => String(value || '').replace(/["\s_]/g, '').toLowerCase();
+            headerIndex = {};
+
+            csvData[0].forEach((header, index) => {
+                headerIndex[normalize(header)] = index;
+            });
+        }
+
+        function getColumnIndex(...possibleHeaders) {
+            const normalize = (value) => String(value || '').replace(/["\s_]/g, '').toLowerCase();
+            for (const header of possibleHeaders) {
+                const key = normalize(header);
+                if (headerIndex[key] !== undefined) {
+                    return headerIndex[key];
+                }
+            }
+            return -1;
+        }
+
+        function getCellValue(row, index, fallbackIndex = -1) {
+            if (index >= 0) {
+                return row[index] || '';
+            }
+            if (fallbackIndex >= 0) {
+                return row[fallbackIndex] || '';
+            }
+            return '';
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCSV();
+            
+            document.getElementById('studentId').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    search();
+                }
+            });
+            
+            document.getElementById('studentId').focus();
+        });
+
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('studentInfo').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.querySelector('.search-btn').disabled = true;
+            document.getElementById('search-text').textContent = '⏳ Searching...';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+            document.querySelector('.search-btn').disabled = false;
+            document.getElementById('search-text').textContent = '🔍 Search Student';
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            document.getElementById('studentInfo').style.display = 'none';
+            hideLoading();
+        }
+
+        function resetPage() {
+            studentData = null;
+            document.getElementById('studentId').value = '';
+            document.getElementById('displayId').textContent = '';
+            document.getElementById('displayLastName').textContent = '';
+            document.getElementById('displayFirstName').textContent = '';
+            document.getElementById('studentInfo').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+            hideLoading();
+            document.getElementById('studentId').focus();
+        }
+
+        function search() {
+            const id = document.getElementById('studentId').value.trim();
+            
+            if (!id) {
+                showError('Please enter a Student ID');
+                return;
+            }
+
+            if (csvData.length === 0) {
+                showError('Student data not loaded. Please refresh the page.');
+                return;
+            }
+
+            showLoading();
+            
+            const student = searchStudent(id);
+            
+            setTimeout(() => {
+                displayResult(student);
+            }, 300);
+        }
+
+        function searchStudent(studentId) {
+            const searchId = String(studentId).trim();
+            const studentIdIndex = getColumnIndex('Student ID', 'StudentId', 'StateStudentID');
+            const lastNameIndex = getColumnIndex('Last', 'LastName', 'CNSLAST');
+            const firstNameIndex = getColumnIndex('First', 'FirstName', 'CNSFIRST');
+            
+            for (let i = 1; i < csvData.length; i++) {
+                const csvId = String(getCellValue(csvData[i], studentIdIndex, 0)).trim();
+                
+                if (csvId === searchId) {
+                    const lastName = getCellValue(csvData[i], lastNameIndex, 1);
+                    const firstName = getCellValue(csvData[i], firstNameIndex, 2);
+                    
+                    return {
+                        id: getCellValue(csvData[i], studentIdIndex, 0),
+                        firstName: firstName,
+                        lastName: lastName
+                    };
+                }
+            }
+            return null;
+        }
+
+        function displayResult(data) {
+            hideLoading();
+            
+            if (!data) {
+                showError('No student found with that ID. Please check the ID and try again.');
+                return;
+            }
+
+            studentData = data;
+
+            document.getElementById('displayId').textContent = data.id;
+            document.getElementById('displayLastName').textContent = data.lastName;
+            document.getElementById('displayFirstName').textContent = data.firstName;
+
+            document.getElementById('studentInfo').style.display = 'block';
+
+            setTimeout(() => {
+                printPDF();
+            }, 150);
+        }
+
+        function prefillFromQuery() {
+            const params = new URLSearchParams(window.location.search);
+            const studentId = params.get('studentId') || params.get('id');
+            
+            if (studentId) {
+                document.getElementById('studentId').value = studentId.trim();
+
+                if (/^\d{5}$/.test(studentId.trim())) {
+                    setTimeout(() => {
+                        search();
+                    }, 500);
+                }
+            }
+        }
+
+        function generatePDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({
+                orientation: 'portrait',
+                unit: 'pt',
+                format: [226.8, 792]
+            });
+
+            const margin = 18;
+            const lineHeight = 18;
+            const textX = margin;
+
+            let y = margin;
+
+            doc.setFontSize(16);
+            doc.setFont(undefined, 'bold');
+            doc.text(String(studentData.lastName || ''), textX, y);
+            y += lineHeight;
+            doc.text(String(studentData.firstName || ''), textX, y);
+            y += lineHeight;
+            doc.text(String(studentData.id || ''), textX, y);
+
+            return doc;
+        }
+
+        function printPDF() {
+            if (!studentData) {
+                alert('No student data to print');
+                return;
+            }
+
+            try {
+                const doc = generatePDF();
+                const pdfBlob = doc.output('blob');
+                const url = URL.createObjectURL(pdfBlob);
+                const printWindow = window.open(url);
+                
+                if (printWindow) {
+                    printWindow.onload = function() {
+                        setTimeout(() => {
+                            printWindow.print();
+                        }, 250);
+                    };
+
+                    const monitorWindow = setInterval(() => {
+                        if (printWindow.closed) {
+                            clearInterval(monitorWindow);
+                            URL.revokeObjectURL(url);
+                            resetPage();
+                        }
+                    }, 300);
+                } else {
+                    URL.revokeObjectURL(url);
+                    alert('Popup blocked. Please allow popups for this site.');
+                }
+            } catch (error) {
+                console.error('PDF generation failed:', error);
+                alert('Failed to generate PDF. Please try again.');
+            }
+        }
+    </script>
+</body>
+</html>
